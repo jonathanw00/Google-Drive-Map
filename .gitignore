@@ -1,0 +1,18 @@
+# Google OAuth credentials — NEVER commit these
+credentials.json
+token.json
+
+# Generated output files
+drive_map.html
+drive_map.md
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
