@@ -94,21 +94,52 @@ TARGET_NAME = "2025 Team Resources"
 
 ### 2. Change which Excel files get read inline
 
+By default, the script does two different things with Excel files:
+
+- **Most Excel files** — listed in the report like any other file (filename, type, date)
+- **Special Excel files** — opened and their row contents displayed directly inside the report, expanded inline
+
+This "read inline" behavior is useful when an Excel file is acting as a **resource index or link list** — you want to see what's inside it without having to open it separately.
+
+The line that controls this is:
 ```python
 if mime == XLSX_MIME and name.lower().startswith("1 links"):
 ```
 
-This line controls which `.xlsx` files have their contents expanded inline in the report. Change `"1 links"` to match whatever naming convention your spreadsheets use.
+This currently only reads files inline if their name starts with `"1 links"`. You'll want to change this to match your own situation. Here are your options:
 
-**Example — read any file starting with "resources":**
+**Option A — Your files follow a consistent naming convention**
+
+Change `"1 links"` to whatever your files start with:
 ```python
 if mime == XLSX_MIME and name.lower().startswith("resources"):
 ```
 
-**Example — read ALL Excel files inline:**
+Or match a word anywhere in the filename (not just the start):
+```python
+if mime == XLSX_MIME and "index" in name.lower():
+```
+
+**Option B — You want ALL Excel files read inline**
 ```python
 if mime == XLSX_MIME:
 ```
+Simple, but can get overwhelming if you have many Excel files that aren't resource lists.
+
+**Option C — Your files have inconsistent names**
+
+Define an explicit list of filenames to read inline:
+```python
+INLINE_XLSX = {"resource list.xlsx", "links and tools.xlsx", "master index.xlsx"}
+if mime == XLSX_MIME and name.lower() in INLINE_XLSX:
+```
+Add that `INLINE_XLSX` list near the top of the file with your other constants, and update it whenever you add a new file you want expanded.
+
+**Option D — Read inline based on which folder the file lives in**
+
+This is more advanced — ask Claude to help you implement it if needed.
+
+> 💡 **Not sure which option fits your situation?** Describe your folder and file structure to [Claude](https://claude.ai) and ask which approach makes the most sense.
 
 ### 3. Change the output filenames
 
@@ -121,21 +152,35 @@ Rename these to whatever suits your project.
 
 ### 4. Adjust the Excel column mapping
 
-Inside the `read_xlsx_links()` function, the script looks for these column headers in your spreadsheet:
+When the script reads an Excel file inline, it looks at the **first row** of the spreadsheet to find column headers. It expects these four columns (in any order):
 
-| Column | Looks for |
-|--------|-----------|
-| Resource Type | "resource type", "type" |
-| Title | "title", "name" |
-| Link | "resource link", "link", "url" |
-| Add'l Info | "add'l", "additional", "notes", "description" |
+| What the script calls it | Header names it will recognize |
+|---|---|
+| Resource Type | "resource type" or "type" |
+| Title | "title" or "name" |
+| Link | "resource link", "link", or "url" |
+| Add'l Info | "add'l", "additional", "notes", or "description" |
 
-If your spreadsheet uses different headers, find the `find_col()` calls in `read_xlsx_links()` and add your header names to the list.
+**If your spreadsheet uses different column header names**, you need to tell the script what to look for. Here's how:
 
-**Example — your sheet uses "Category" instead of "Resource Type":**
+1. Open `drivemap.py` and search for the function `read_xlsx_links`
+2. A few lines in you'll see four lines that start with `col_type`, `col_title`, `col_link`, and `col_addl`
+3. Add your header name (in lowercase) to the relevant line
+
+**Example — your sheet has a column called "Category" instead of "Resource Type":**
+
+Find this line:
+```python
+col_type = find_col("resource type", "type")
+```
+Change it to:
 ```python
 col_type = find_col("resource type", "type", "category")
 ```
+
+The script will now recognize "Category" as the Resource Type column. You can add as many alternative names as you need, separated by commas.
+
+> 💡 **Not sure what to change?** Paste `drivemap.py` into [claude.ai](https://claude.ai) and describe your spreadsheet's column headers — Claude will tell you exactly what to update.
 
 ### 5. Add new file type badges or filters
 
